@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini ChatGPT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #111;
+      color: white;
+      padding: 20px;
+    }
+    .chatbox {
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      background: #222;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .message {
+      margin: 10px 0;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="chatbox">
+  <h2>💬 Mini ChatGPT</h2>
+  <div id="chat"></div>
+  <input type="text" id="userInput" placeholder="Escribí tu mensaje..." />
+  <button onclick="sendMessage()">Enviar</button>
+</div>
+
+<script>
+  const chatDiv = document.getElementById("chat");
+  const input = document.getElementById("userInput");
+
+  const HF_API_URL = "https://api-inference.huggingface.co/models/gpt2";
+  const HF_API_TOKEN = "Bearer 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";
+
+  async function sendMessage() {
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    appendMessage("🧑‍💻 Tú", userText);
+    input.value = "";
+
+    appendMessage("🤖 IA", "Pensando...");
+
+    const response = await fetch(HF_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": HF_API_TOKEN,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: userText,
+        parameters: { max_length: 60, temperature: 0.7 }
+      })
+    });
+
+    const result = await response.json();
+    document.querySelectorAll(".message").forEach(msg => {
+      if (msg.innerText === "🤖 IA: Pensando...") msg.remove();
+    });
+
+    if (result?.[0]?.generated_text) {
+      const reply = result[0].generated_text.slice(userText.length).trim();
+      appendMessage("🤖 IA", reply || "No entendí 😅");
+    } else {
+      appendMessage("🤖 IA", "Error al responder 😕");
+    }
+  }
+
+  function appendMessage(sender, text) {
+    const msg = document.createElement("div");
+    msg.className = "message";
+    msg.innerText = `${sender}: ${text}`;
+    chatDiv.appendChild(msg);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
